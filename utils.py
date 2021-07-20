@@ -1,7 +1,9 @@
 import os
 import pyheif
-from PIL import Image
+from PIL import Image, ImageOps
 import time
+import numpy as np
+from typing import Dict
 
 def heic_to_jpg(heic_folder: str, jpg_folder: str) -> None:
 
@@ -29,6 +31,37 @@ def heic_to_jpg(heic_folder: str, jpg_folder: str) -> None:
         image.save(os.path.join(jpg_folder, name) + ".JPG", "JPEG")
     print(unconverted)
     print(len(unconverted))
+
+def group_duplicate(dir: str) -> Dict[str, str]:
+    res = {}
+    images = os.listdir(dir)
+    for im in images:
+        try:
+            image = Image.open(os.path.join(dir, im))
+        except:
+            continue
+        hash = average_hashing(image)
+        res[hash] = res.get(hash, []) + [im]
+    return res
+
+    
+def average_hashing(image: Image) -> str: 
+    image = image.resize((8, 8))
+    image = ImageOps.grayscale(image)
+    im_arr = np.array(image)
+    im_mean = np.mean(im_arr)
+    for r in range(len(im_arr)):
+        for c in range(len(im_arr[0])):
+            if im_arr[r][c] > im_mean:
+                im_arr[r][c] = 1
+            else:
+                im_arr[r][c] = 0
+    res = []
+    for row in im_arr:
+        res.extend(row)
+    res = "".join(str(r) for r in res)
+    return res
+
 
 
 if __name__ == "__main__":
